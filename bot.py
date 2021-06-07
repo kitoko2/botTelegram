@@ -10,24 +10,26 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 PORT = int(os.environ.get('PORT', '8443'))
 
-TOKEN="MY_TOKEN_TELEGRAM"
+TOKEN="MON_TOKEN_TELEGRAM"
 
 updater=Updater(token=TOKEN,use_context=True)  # a regler le procces
 
 def start(update,context):
+    userName=update["message"]["chat"]["first_name"]
     update.message.reply_text("""
-    😎Salut Chers ami(e) tu vas bien j'espere😜!\n
+    😎Salut {} tu vas bien j'espere😜!\n
 •/time pour voir le temps👀\n
-•/youtube aller sur youtube✨\n 
+•/youtube pour liens  youtube✨\n 
 •/send pour envoyer divers photos de chien(en cours de devellopemnt...)🐱‍🏍\n
 •/debut pour lancer le mini menu(en development...)👌
 •/blague pour une blague random👌
-""")
+•/dictionnaire pour rechercher un mots 
+""".format(userName))
 
 
 
-def pasconnue(update,context):
-    update.message.reply_text("Commande saisi incorrect")
+# def pasconnue(update,context):
+#     update.message.reply_text("Commande saisi incorrect")
 
 def time(update,context):
     import time
@@ -65,17 +67,17 @@ def send(update,context):
 
 def getBlague():
     r=requests.get("https://www.blagues-api.fr/api/random",headers= {
-        'Authorization': 'Bearer [MY_TOKEN ON MY ACCOUNT API_BLAGUE]'
+        'Authorization': 'Bearer [TOKEN_ON_API_BLAGUE]'
         # Bearer [TOKEN]
     })
     if r.status_code==200:
         return r
     else :
-        return 'null'
+        return None
 
 def blague(update,context):
     result=getBlague()
-    if result != 'null':
+    if result != None:
         result=result.json()
         blague=result["joke"]
         answer=result["answer"]
@@ -85,13 +87,36 @@ def blague(update,context):
         update.message.reply_text("FINI POUR AUJOURD'HUI j'utilise une API gratos donc aider moi en acheter un")
 
 
+def runDico(update,context):
+    update.message.reply_text("entrer un mot a rechercher :")
+    updater.dispatcher.add_handler(MessageHandler(Filters.text,entry))
+  
 
+   
+
+#use api wikipedia
+def entry(update,context):
+    name=update['message']['text'] 
+    print(name)
+    r=requests.get("https://fr.wikipedia.org/w/api.php?action=query&titles={}&prop=extracts&exchars=250&explaintext&utf8&format=json".format(name.lower()))
+    if r.status_code==200:
+        res=r.json()
+        donne=res["query"]["pages"]
+        cntDonne=[k for k in donne.keys()]
+        page=cntDonne[0]
+        if int(page) != -1 :
+            update.message.reply_text(res["query"]["pages"][page]["extract"]) #resultat final
+        else:
+            update.message.reply_text("le mots entrer est introuvale")
 
 updater.dispatcher.add_handler(CommandHandler("send",send))
 updater.dispatcher.add_handler(CommandHandler("start",start))
 updater.dispatcher.add_handler(CommandHandler("youtube",youtube))
 updater.dispatcher.add_handler(CommandHandler("time",time))
 updater.dispatcher.add_handler(CommandHandler("blague",blague))
+updater.dispatcher.add_handler(CommandHandler("dictionnaire",runDico))
+
+# updater.dispatcher.add_handler(MessageHandler(Filters.text,entry))
 
 
 def debut(update,context):
@@ -118,7 +143,7 @@ def button(update,context):
 updater.dispatcher.add_handler(CommandHandler("debut",debut))
 updater.dispatcher.add_handler(CallbackQueryHandler(button))
 
-updater.dispatcher.add_handler(MessageHandler(Filters.text,pasconnue))
+# updater.dispatcher.add_handler(MessageHandler(Filters.text,pasconnue))
 
 
 
@@ -132,6 +157,7 @@ updater.start_webhook(listen="0.0.0.0",port=PORT,url_path=TOKEN, webhook_url='ht
 updater.idle()
 
 
+# updater.bot.set_webhook(url=settings.WEBHOOK_URL)
 # remplace updater.start_polling() -> c'est pour travailler en local
 
 # def change(update,context):
